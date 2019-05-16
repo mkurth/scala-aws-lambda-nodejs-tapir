@@ -1,4 +1,6 @@
-import Endpoints.allEndPoints
+package com.mcurse
+
+import com.mcurse.endpoints.Endpoints.allEndPoints
 import sttp.tapir.serverless.aws.sam.{AwsSamInterpreter, AwsSamOptions, CodeSource}
 
 import java.io.PrintWriter

@@ -24,7 +24,7 @@ lazy val rootProject = (project in file("."))
   .settings(commonSettings: _*)
   .settings(
     publishArtifact   := false,
-    name              := "awesome-login",
+    name              := "nodejsserver",
     createSamTemplate := Def.taskDyn {
       val log          = sLog.value
       val templatePath = (baseDirectory.value / "template.yaml").toString
@@ -36,7 +36,7 @@ lazy val rootProject = (project in file("."))
       Def.task {
         val _ = (createSamTemplateProject / Compile / runMain)
           .toTask(
-            s" LambdaSamTemplate $runtime $zipLocation $handler $templatePath"
+            s" com.mcurse.LambdaSamTemplate $runtime $zipLocation $handler $templatePath"
           )
           .value
         log.info(s"Wrote template to: $templatePath")

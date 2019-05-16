@@ -1,3 +1,5 @@
+package com.mcurse.domain
+
 import cats.Monad
 
 object DomainLogic {

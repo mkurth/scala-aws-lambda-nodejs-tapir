@@ -1,3 +1,5 @@
+package com.mcurse.endpoints
+
 import sttp.tapir._
 
 import scala.annotation.nowarn
