@@ -7,15 +7,16 @@ Description: >-
   Written in Scala, compiled with the GraalVM and executed with the AWS Lambda Custom Runtime.
 
 Resources:
-  HelloScalaGraalvmFunction:
+  HelloScalaJsFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: HelloScalaGraalvm
-      Description: Lambda function with custom runtime
-      Runtime: provided
-      Handler: bootstrap
-      CodeUri: dist/
-      MemorySize: 512
+      FunctionName: HelloScalaJs
+      Description: Lambda function with js runtime
+      PackageType: Zip
+      Runtime: nodejs16.x
+      Handler: awesome-login.handler
+      CodeUri: target/universal/awesome-login-0.1.0-SNAPSHOT.zip
+      MemorySize: 128
       Timeout: 15
       Events:
         Hello:
