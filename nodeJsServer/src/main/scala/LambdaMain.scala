@@ -1,5 +1,4 @@
 import Endpoints.{byeEndpoint, helloEndpoint}
-import cats.implicits.catsSyntaxEitherId
 import sttp.tapir.serverless.aws.lambda._
 import sttp.tapir.serverless.aws.lambda.js._
 
@@ -16,12 +15,8 @@ object LambdaMain {
 
   val route: Route[Future] = AwsFutureServerInterpreter(options).toRoute(
     List(
-      helloEndpoint.serverLogic { _ =>
-        Future("hello".asRight[Unit])
-      },
-      byeEndpoint.serverLogic { _ =>
-        Future("bye".asRight[Unit])
-      }
+      helloEndpoint.serverLogic(DomainLogic.helloLogic[Future]),
+      byeEndpoint.serverLogic(DomainLogic.byeLogic[Future])
     )
   )
 

@@ -1,8 +1,7 @@
-import com.typesafe.sbt.packager.docker.ExecCmd
 import scalajsbundler.sbtplugin.ScalaJSBundlerPlugin.autoImport.useYarn
 
 lazy val commonSettings = Seq(
-  organization := "com.softwaremill.ts",
+  organization := "com.mcurse",
   scalaVersion := "2.13.8",
   scalacOptions ++= Seq(
     "-deprecation",    // Emit warning and location for usages of deprecated APIs.
@@ -15,42 +14,37 @@ lazy val commonSettings = Seq(
   )
 )
 
-val scalaTest        = "org.scalatest" %% "scalatest" % "3.2.12" % Test
-val amazonSdkVersion = "2.15.77"
-val tapirVersion     = "1.0.1"
-val scalaLogging     = "3.9.2"
-val logback          = "1.2.3"
-val circeVersion     = "0.14.1"
+val scalaTest    = "org.scalatest" %% "scalatest" % "3.2.12" % Test
+val tapirVersion = "1.0.1"
+val circeVersion = "0.14.1"
 
-val deploy = taskKey[Unit]("Builds and uploads a new Docker image, writes the SAM template and deploys it.")
+val createSamTemplate = taskKey[Unit]("Computes sam template from tapir code")
 
 lazy val rootProject = (project in file("."))
   .settings(commonSettings: _*)
   .settings(
-    publishArtifact := false,
-    name            := "awesome-login",
-    deploy          := Def.taskDyn {
+    publishArtifact   := false,
+    name              := "awesome-login",
+    createSamTemplate := Def.taskDyn {
       val log          = sLog.value
       val templatePath = (baseDirectory.value / "template.yaml").toString
       val runtime      = "nodejs16.x"
-      val zipLocation  = s"${name.value}/target/universal/${name.value}-0.1.0-SNAPSHOT.zip"
+      val zipLocation  =
+        s"nodeJsServer/target/universal/${name.value}-${version.value}.zip"
       val handler      = s"${name.value}.handler"
 
       Def.task {
-        val _ = (runMain in createApi in Compile)
+        val _ = (createSamTemplateProject / Compile / runMain)
           .toTask(
-            s" LamdaSamTemplate $runtime $zipLocation $handler $templatePath"
+            s" LambdaSamTemplate $runtime $zipLocation $handler $templatePath"
           )
           .value
         log.info(s"Wrote template to: $templatePath")
-        log.info(s"Wrote template to: $version")
-
-        log.info("Running sam ...")
         ()
       }
     }.value
   )
-  .aggregate(endpoints, awesomeLogin, createApi)
+  .aggregate(endpoints, nodeJsServer, createSamTemplateProject)
 
 lazy val endpoints: Project = (project in file("endpoints"))
   .settings(commonSettings: _*)
@@ -65,32 +59,40 @@ lazy val endpoints: Project = (project in file("endpoints"))
   )
   .enablePlugins(ScalaJSPlugin, ScalaJSBundlerPlugin)
 
-lazy val createApi: Project = (project in file("create-api"))
+lazy val createSamTemplateProject: Project = (project in file("createSamTemplate"))
   .settings(commonSettings: _*)
   .settings(
-    name := "create-api",
+    name := "createSamTemplate",
     libraryDependencies ++= Seq(
       "com.softwaremill.sttp.tapir" %% "tapir-aws-sam" % tapirVersion
     )
   )
   .dependsOn(endpoints)
 
-lazy val awesomeLogin: Project = (project in file("awesome-login"))
+lazy val domain = (project in file("domain"))
   .settings(commonSettings: _*)
   .settings(
-    name              := "awesome-login",
+    name                := "domain",
+    libraryDependencies += scalaTest,
+    libraryDependencies += "org.typelevel" %%% "cats-effect" % "3.3.9"
+  )
+  .enablePlugins(ScalaJSPlugin)
+
+lazy val nodeJsServer: Project = (project in file("nodeJsServer"))
+  .settings(commonSettings: _*)
+  .settings(
+    name              := "nodeJsServer",
     libraryDependencies ++= Seq(
-      "com.softwaremill.sttp.tapir" %%% "tapir-aws-lambda" % tapirVersion,
-      scalaTest
+      "com.softwaremill.sttp.tapir" %%% "tapir-aws-lambda" % tapirVersion
     ),
     webpack / version := "4.16.1",
     useYarn           := true,
     webpackConfigFile := Some(baseDirectory.value / "webpack.config.js"),
     topLevelDirectory := None,
-    Universal / mappings ++= (webpack in (Compile, fullOptJS)).value.map { f =>
+    Universal / mappings ++= (Compile / fullOptJS / webpack).value.map { f =>
       // remove the bundler suffix from the file names
       f.data -> f.data.getName.replace("-opt-bundle", "")
     }
   )
-  .dependsOn(endpoints)
+  .dependsOn(endpoints, domain)
   .enablePlugins(ScalaJSPlugin, ScalaJSBundlerPlugin, UniversalPlugin)

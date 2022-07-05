@@ -3,7 +3,7 @@ import sttp.tapir.serverless.aws.sam.{AwsSamInterpreter, AwsSamOptions, CodeSour
 
 import java.io.PrintWriter
 
-object LamdaSamTemplate extends App {
+object LambdaSamTemplate extends App {
 
   val Array(runtime, zipLocation, handler, filename) = args
 
